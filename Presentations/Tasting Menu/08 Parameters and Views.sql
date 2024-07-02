@@ -1,12 +1,12 @@
-﻿USE StackOverflow2013;
+USE StackOverflow2013;
 EXEC dbo.DropIndexes;
 SET NOCOUNT ON;
 DBCC FREEPROCCACHE;
-GO 
+GO
 
 
 
-/*                                                       
+/*
 
 Words of wisdom for windowing functions
  * Index partition by and then order by columns in the key
@@ -15,53 +15,53 @@ Words of wisdom for windowing functions
 
 
 /*
-██████╗ ██╗   ██╗███████╗██╗  ██╗██╗   ██╗                                  
-██╔══██╗██║   ██║██╔════╝██║  ██║╚██╗ ██╔╝                                  
-██████╔╝██║   ██║███████╗███████║ ╚████╔╝                                   
-██╔═══╝ ██║   ██║╚════██║██╔══██║  ╚██╔╝                                    
-██║     ╚██████╔╝███████║██║  ██║   ██║                                     
-╚═╝      ╚═════╝ ╚══════╝╚═╝  ╚═╝   ╚═╝                                     
-                                                                            
+██████╗ ██╗   ██╗███████╗██╗  ██╗██╗   ██╗
+██╔══██╗██║   ██║██╔════╝██║  ██║╚██╗ ██╔╝
+██████╔╝██║   ██║███████╗███████║ ╚████╔╝
+██╔═══╝ ██║   ██║╚════██║██╔══██║  ╚██╔╝
+██║     ╚██████╔╝███████║██║  ██║   ██║
+╚═╝      ╚═════╝ ╚══════╝╚═╝  ╚═╝   ╚═╝
+
 ██████╗ ██████╗ ███████╗██████╗ ██╗ ██████╗ █████╗ ████████╗███████╗███████╗
 ██╔══██╗██╔══██╗██╔════╝██╔══██╗██║██╔════╝██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██████╔╝██████╔╝█████╗  ██║  ██║██║██║     ███████║   ██║   █████╗  ███████╗
 ██╔═══╝ ██╔══██╗██╔══╝  ██║  ██║██║██║     ██╔══██║   ██║   ██╔══╝  ╚════██║
 ██║     ██║  ██║███████╗██████╔╝██║╚██████╗██║  ██║   ██║   ███████╗███████║
 ╚═╝     ╚═╝  ╚═╝╚══════╝╚═════╝ ╚═╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
-  
+
 We stick this query in a view to let people get ranked posts for a user
 */
 
 /*ayy*/
-CREATE INDEX 
-   chunk 
-ON dbo.Posts 
-    (OwnerUserId, Score DESC) 
-INCLUDE  
+CREATE INDEX
+   chunk
+ON dbo.Posts
+    (OwnerUserId, Score DESC)
+INCLUDE
     (CreationDate, LastActivityDate)
 WITH
     (MAXDOP = 8, SORT_IN_TEMPDB = ON, DATA_COMPRESSION = PAGE);
-GO 
+GO
 
-CREATE OR ALTER VIEW 
+CREATE OR ALTER VIEW
     dbo.PushyPaul
 WITH SCHEMABINDING
 AS
-    SELECT 
+    SELECT
         p.OwnerUserId,
         p.Score,
         p.CreationDate,
         p.LastActivityDate,
-        PostRank = 
+        PostRank =
             DENSE_RANK() OVER
-            ( 
-                PARTITION BY 
-                   p.OwnerUserId 
-                ORDER BY     
-                   p.Score DESC 
+            (
+                PARTITION BY
+                   p.OwnerUserId
+                ORDER BY
+                   p.Score DESC
             )
     FROM dbo.Posts AS p;
-GO 
+GO
 
 
 /*
@@ -72,15 +72,15 @@ Turn on query plans, dummy!
 
 
 /*
-This is nice and fast even for Jon Skeet. 
+This is nice and fast even for Jon Skeet.
 
 Good job, us.
 */
-SELECT 
-    p.* 
+SELECT
+    p.*
 FROM dbo.PushyPaul AS p
 WHERE p.OwnerUserId = 22656;
-GO 
+GO
 
 
 
@@ -101,26 +101,26 @@ We'll wrap it in a stored procedure.
 
 I hear they make everything better.
 */
-CREATE OR ALTER PROCEDURE 
-    dbo.StinkyPete 
+CREATE OR ALTER PROCEDURE
+    dbo.StinkyPete
 (
     @UserId int
 )
-AS 
+AS
 SET NOCOUNT, XACT_ABORT ON;
 BEGIN
-    SELECT 
-        p.* 
+    SELECT
+        p.*
     FROM dbo.PushyPaul AS p
     WHERE p.OwnerUserId = @UserId;
 END;
-GO 
+GO
 
 
 /*
 Don't believe me just wat--
 */
-EXEC dbo.StinkyPete 
+EXEC dbo.StinkyPete
     @UserId = 22656;
 
 
@@ -134,22 +134,22 @@ EXEC dbo.StinkyPete
 /*
 ██╗      ██╗
 ╚██╗ ██╗██╔╝
- ╚██╗╚═╝██║ 
- ██╔╝▄█╗██║ 
+ ╚██╗╚═╝██║
+ ██╔╝▄█╗██║
 ██╔╝ ▀═╝╚██╗
 ╚═╝      ╚═╝
-            
+
 What the hell just happened?
 */
-EXEC dbo.StinkyPete 
+EXEC dbo.StinkyPete
     @UserId = 22656;
-GO 
+GO
 
-SELECT 
-    p.* 
+SELECT
+    p.*
 FROM dbo.PushyPaul AS p
 WHERE p.OwnerUserId = 22656;
-GO 
+GO
 
 
 
@@ -173,7 +173,7 @@ GO
 ╚██╗ ██╔╝██║██╔══╝  ██║███╗██║╚════██║
  ╚████╔╝ ██║███████╗╚███╔███╔╝███████║
   ╚═══╝  ╚═╝╚══════╝ ╚══╝╚══╝ ╚══════╝
-                                      
+
 View can't do that!
 
 The problem with views?
@@ -212,56 +212,56 @@ The problem with views?
 █████╗  ██║   ██║██╔██╗ ██║██║        ██║   ██║██║   ██║██╔██╗ ██║██║
 ██╔══╝  ██║   ██║██║╚██╗██║██║        ██║   ██║██║   ██║██║╚██╗██║╚═╝
 ██║     ╚██████╔╝██║ ╚████║╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║██╗
-╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝                                                                     
+╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝
 */
 
-GO 
+GO
 
-CREATE OR ALTER FUNCTION 
-    dbo.PusherPaul 
+CREATE OR ALTER FUNCTION
+    dbo.PusherPaul
 (
     @UserId int
 )
-RETURNS table 
+RETURNS table
 WITH SCHEMABINDING
 AS
 RETURN
-    SELECT 
+    SELECT
         p.OwnerUserId,
         p.Score,
         p.CreationDate,
         p.LastActivityDate,
-        PostRank = 
+        PostRank =
             DENSE_RANK() OVER
-            ( 
-                PARTITION BY 
-                    p.OwnerUserId 
-                ORDER BY     
-                    p.Score DESC 
+            (
+                PARTITION BY
+                    p.OwnerUserId
+                ORDER BY
+                    p.Score DESC
             )
     FROM dbo.Posts AS p
     WHERE p.OwnerUserId = @UserId;
-GO 
+GO
 
-CREATE OR ALTER PROCEDURE 
-    dbo.SneakyPete 
+CREATE OR ALTER PROCEDURE
+    dbo.SneakyPete
 (
     @UserId int
 )
-AS 
+AS
 SET NOCOUNT, XACT_ABORT ON;
 BEGIN
-    SELECT 
+    SELECT
         p.*
     FROM dbo.PusherPaul(@UserId) AS p;
 END;
-GO 
+GO
 
 
 
-EXEC dbo.SneakyPete 
+EXEC dbo.SneakyPete
     @UserId = 22656;
-GO 
+GO
 
 
 
@@ -276,40 +276,40 @@ Trace Flag 4199 fixes this issue.
 
 */
 
-CREATE OR ALTER PROCEDURE 
+CREATE OR ALTER PROCEDURE
     dbo.StinkyPete_4199
 (
     @UserId int
 )
-AS 
+AS
 SET NOCOUNT, XACT_ABORT ON;
 BEGIN
-    SELECT 
-        p.* 
+    SELECT
+        p.*
     FROM dbo.PushyPaul AS p
     WHERE p.OwnerUserId = @UserId
     OPTION(QUERYTRACEON 4199);
 END;
-GO 
+GO
 
 
 
-EXEC dbo.StinkyPete 
+EXEC dbo.StinkyPete
     @UserId = 22656;
-GO 
+GO
 
-EXEC dbo.StinkyPete_4199 
+EXEC dbo.StinkyPete_4199
     @UserId = 22656;
-GO 
+GO
 
 
 /*
-   
+
 A view is just a query
  * They can't accept parameters
  * Parameters can't be pushed past Sequence Project
  * Constants can, recompile hints can help
  * iTVFs can accept parameters
- * Which can be pushed to the index access                              
+ * Which can be pushed to the index access
 
 */

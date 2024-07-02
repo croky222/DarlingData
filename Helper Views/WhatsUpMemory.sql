@@ -150,5 +150,5 @@ GROUP BY
     SCHEMA_NAME(x.schema_id),
     x.object_name,
     x.index_name
-ORDER BY 
+ORDER BY
     COUNT_BIG(*) DESC;
